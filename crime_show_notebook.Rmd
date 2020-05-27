@@ -1,0 +1,62 @@
+---
+title: "Crime Show ANOVA Analysis"
+output: html_notebook
+---
+
+## Objective: We want to know if the average season rating for crime shows is the same decade to decade.
+
+Our data consists of 165 randomly sampled crime shows, 55 from each decade (1990s, 2000s, and 2010s). There are a total of 5 features for each show: season number, title, season rating (from 0 to 10), decade, and genres. For the purposes of this project, we are only interested in the decade and season rating features.
+
+```{r}
+library(tidyverse)
+
+# load crime show data
+crime_show_data <- readRDS("crime_show_ratings.RDS")
+
+# Side by side box plots
+crime_show_data %>%
+  ggplot(aes(x = decade, y = season_rating)) +
+  geom_boxplot() +
+  ggtitle("Boxplots of average rating by decade for crime TV shows")
+
+# Facetted histograms
+crime_show_data %>%
+  ggplot(aes(x = season_rating)) +
+  geom_histogram(bins=20) +
+  facet_wrap(~decade) +
+  ggtitle("Histograms of average rating by decade for crime TV shows")
+```
+Based on just eyeballing the box plot and histogram, I see that the shape of all the distribution of ratings across the decades to be similar in the histogram and the medians on the box plot are all around 8 points. Because of this, I would not expect to find a significant difference between any of the means.
+
+## The hypothesis we're testing is the following:
+
+$H_0:$ The average season rating for crime shows stays the same from decade to decade.
+$H_1:$ At least one average season rating for crime shows in a decade is different from the other decades.
+
+To do this, we're going to conduct a one way ANOVA with the following assumptions:
+1. Errors are independent.
+2. Errors are normally distributed with mean 0.
+3. Errors have constant variance.
+
+## Testing and analysis:
+
+```{r}
+anova1 <- aov(season_rating ~ decade, data = crime_show_data)
+summary(anova1)
+```
+Because the p-value (0.238) is much larger than the significance level of 0.05, we fail to reject the null hypothesis that the average season rating for crime shows stays the same from decade to decade.
+
+
+```{r}
+plot(anova1, 1)
+plot(anova1, 2)
+
+crime_show_data %>%
+group_by(decade) %>%
+summarise(var_rating = sd(season_rating)^2)
+```
+The first plot tells us that the residuals in each decade are centered around 0 which is important for the assumption of $\mathbb{E}[\epsilon_i] = 0$. The second plot tells us how normal the residuals are. They are fairly normal with the exception of a couple outliers. We can use the 3rd plot to test for the equality of variances. Since $\dfrac{s^2_{max}}{s^2_{min}} = 2.362 < 3$, the assumption is satisfied under a rule of thumb from Dean and Voss (Design and Analysis of Experiments, 1999, page 112).
+
+## Conclusion:
+
+Since our assumptions for the ANOVA are satisified, we can conclude from our tests that the average season rating for crime shows stays the same from decade to decade.
